@@ -1,0 +1,76 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+.fseventsd
+Icon?
+
+# Claude Code
+.claude/
+CLAUDE.md
+
+# Xcode — user-specific state
+xcuserdata/
+*.xcuserstate
+*.xcuserdatad/
+*.xccheckout
+*.moved-aside
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Packages/
+Package.resolved
+
+# CocoaPods (unused here, but just in case)
+Pods/
+
+# Carthage
+Carthage/Build/
+Carthage/Checkouts/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# Build artifacts
+build/
+*.o
+*.a
+*.swiftmodule
+*.swiftdoc
+*.swiftinterface
+
+# Archives and exports
+*.xcarchive
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*~
+
+# Editor configs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Env/credentials — never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.mobileprovision
+*.provisionprofile

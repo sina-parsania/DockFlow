@@ -51,6 +51,7 @@ public final class AppState {
 
     public var applyStatus: ApplyStatus = .idle
     public var lastError: String?
+    public var lastCleanupReport: CleanupMissingItemsUseCase.Report?
 
     public var isInspectorVisible: Bool = true
     public var isFirstLaunch: Bool = false
@@ -108,6 +109,9 @@ public final class AppState {
                 selectedPresetID = settings.activePresetID ?? presets.first?.id
             }
             rebindHotkeys()
+            if settings.autoRemoveMissingItems {
+                runCleanup(persistIfChanged: true)
+            }
             Log.app.info("Loaded \(self.presets.count) presets")
         } catch {
             presets = []
@@ -115,6 +119,27 @@ public final class AppState {
             lastError = error.localizedDescription
             Log.app.error("Failed to load snapshot: \(error.localizedDescription)")
         }
+    }
+
+    /// Runs the cleanup pass once. When `persistIfChanged` is true and anything
+    /// was removed, the snapshot is saved immediately so we don't lose the
+    /// result if the app is killed right after.
+    @MainActor
+    @discardableResult
+    public func runCleanup(persistIfChanged: Bool = true) -> CleanupMissingItemsUseCase.Report {
+        let useCase = CleanupMissingItemsUseCase(validator: validator)
+        let report = useCase.execute(presets: &presets)
+        if !report.isEmpty {
+            lastCleanupReport = report
+            if persistIfChanged { persist() }
+            Log.validation.info("Removed \(report.totalRemoved) missing items across \(report.removedByPreset.count) preset(s)")
+        }
+        return report
+    }
+
+    @MainActor
+    public func dismissCleanupReport() {
+        lastCleanupReport = nil
     }
 
     public func rebindHotkeys() {
@@ -358,9 +383,13 @@ public final class AppState {
     @MainActor
     public func applyPreset(_ preset: Preset, options: ApplyOptions) async {
         applyStatus = .applying
+        if settings.autoRemoveMissingItems {
+            runCleanup(persistIfChanged: true)
+        }
+        let currentPreset = self.preset(with: preset.id) ?? preset
         do {
             let useCase = ApplyPresetUseCase(dockService: dockService, validator: validator)
-            let result = try await useCase.execute(preset: preset, options: options)
+            let result = try await useCase.execute(preset: currentPreset, options: options)
             if let index = indexOfPreset(preset.id) {
                 presets[index].lastAppliedAt = .now
             }

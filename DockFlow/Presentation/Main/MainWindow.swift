@@ -62,6 +62,16 @@ public struct MainWindow: View {
             .help("Import the live Dock into a new preset")
 
             Button {
+                let report = state.runCleanup(persistIfChanged: true)
+                if report.isEmpty {
+                    state.lastError = "No missing items to clean up."
+                }
+            } label: {
+                Label("Clean Up Missing", systemImage: "sparkles")
+            }
+            .help("Remove items whose files no longer exist on disk")
+
+            Button {
                 state.isInspectorVisible.toggle()
             } label: {
                 Label("Inspector", systemImage: "sidebar.right")

@@ -28,6 +28,7 @@ public struct PresetDetail: View {
         VStack(spacing: 0) {
             toolbar(preset)
             Divider()
+            cleanupBanner().padding(.horizontal, 12).padding(.top, 12)
             statusBanner().padding(.horizontal, 12).padding(.top, 12)
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
@@ -48,6 +49,26 @@ public struct PresetDetail: View {
                 .padding(20)
             }
         }
+    }
+
+    @ViewBuilder
+    private func cleanupBanner() -> some View {
+        if let report = state.lastCleanupReport, !report.isEmpty {
+            StatusBanner(
+                style: .warning,
+                title: "Removed \(report.totalRemoved) missing item\(report.totalRemoved == 1 ? "" : "s")",
+                message: summarize(report),
+                action: (title: "Dismiss", handler: { state.dismissCleanupReport() })
+            )
+        }
+    }
+
+    private func summarize(_ report: CleanupMissingItemsUseCase.Report) -> String {
+        let pairs = report.removedByPreset.flatMap { (presetID, items) -> [String] in
+            guard let presetName = state.preset(with: presetID)?.name else { return [] }
+            return items.map { "\($0.displayName) · \(presetName) › \($0.categoryName)" }
+        }
+        return pairs.prefix(5).joined(separator: "\n") + (pairs.count > 5 ? "\n…and \(pairs.count - 5) more" : "")
     }
 
     @ViewBuilder

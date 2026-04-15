@@ -40,6 +40,7 @@ public struct AppSettings: Codable, Hashable, Sendable {
     public var defaultImportGrouping: GroupingStrategy
     public var launchAtLogin: Bool
     public var showCategoriesInMenuBar: Bool
+    public var autoRemoveMissingItems: Bool
 
     public init(
         applyConfirmationMode: ConfirmationMode = .firstTimeOnly,
@@ -52,7 +53,8 @@ public struct AppSettings: Codable, Hashable, Sendable {
         maxBackupCount: Int = 10,
         defaultImportGrouping: GroupingStrategy = .byType,
         launchAtLogin: Bool = false,
-        showCategoriesInMenuBar: Bool = true
+        showCategoriesInMenuBar: Bool = true,
+        autoRemoveMissingItems: Bool = true
     ) {
         self.applyConfirmationMode = applyConfirmationMode
         self.launchAssociatedApps = launchAssociatedApps
@@ -65,6 +67,7 @@ public struct AppSettings: Codable, Hashable, Sendable {
         self.defaultImportGrouping = defaultImportGrouping
         self.launchAtLogin = launchAtLogin
         self.showCategoriesInMenuBar = showCategoriesInMenuBar
+        self.autoRemoveMissingItems = autoRemoveMissingItems
     }
 
     public static let `default` = AppSettings()
@@ -73,7 +76,7 @@ public struct AppSettings: Codable, Hashable, Sendable {
         case applyConfirmationMode, launchAssociatedApps, autoBackupBeforeApply
         case defaultSeparatorStyle, activePresetID, firstLaunchCompleted
         case restartCfprefsdOnFailure, maxBackupCount, defaultImportGrouping
-        case launchAtLogin, showCategoriesInMenuBar
+        case launchAtLogin, showCategoriesInMenuBar, autoRemoveMissingItems
     }
 
     public init(from decoder: Decoder) throws {
@@ -89,5 +92,6 @@ public struct AppSettings: Codable, Hashable, Sendable {
         self.defaultImportGrouping = try c.decodeIfPresent(GroupingStrategy.self, forKey: .defaultImportGrouping) ?? .byType
         self.launchAtLogin = try c.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? false
         self.showCategoriesInMenuBar = try c.decodeIfPresent(Bool.self, forKey: .showCategoriesInMenuBar) ?? true
+        self.autoRemoveMissingItems = try c.decodeIfPresent(Bool.self, forKey: .autoRemoveMissingItems) ?? true
     }
 }

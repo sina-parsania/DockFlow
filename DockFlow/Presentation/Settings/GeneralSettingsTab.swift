@@ -64,6 +64,24 @@ public struct GeneralSettingsTab: View {
             }
 
             Section {
+                Toggle("Auto-remove items whose file is missing", isOn: Binding(
+                    get: { state.settings.autoRemoveMissingItems },
+                    set: { value in state.updateSettings { $0.autoRemoveMissingItems = value } }
+                ))
+                Button("Clean Up Missing Items Now") {
+                    let report = state.runCleanup(persistIfChanged: true)
+                    if report.isEmpty {
+                        state.lastError = "Nothing to clean up — all items exist on disk."
+                    }
+                }
+            } header: {
+                Text("Sync with Filesystem")
+            } footer: {
+                Text("When enabled, DockFlow removes items whose app/file is gone from disk — on app launch and before every apply. Icons and validation are always read live from macOS; nothing is cached in DockFlow.")
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
                 Picker("Default separator style", selection: Binding(
                     get: { state.settings.defaultSeparatorStyle },
                     set: { value in state.updateSettings { $0.defaultSeparatorStyle = value } }

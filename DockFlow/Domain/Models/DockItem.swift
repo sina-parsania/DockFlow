@@ -21,14 +21,6 @@ public struct DockItem: Identifiable, Codable, Hashable, Sendable {
         self.bundleIdentifier = bundleIdentifier
     }
 
-    public var iconCacheKey: String {
-        switch target {
-        case .fileURL(let url): return "file:" + url.standardizedFileURL.path(percentEncoded: false)
-        case .webURL(let url):  return "web:" + url.absoluteString
-        case .none:             return "kind:" + kind.rawValue
-        }
-    }
-
     public static func spacer(_ kind: ItemKind = .smallSpacer) -> DockItem {
         precondition(kind.isSpacer, "spacer() requires a spacer kind")
         return DockItem(kind: kind, displayName: kind.displayLabel, target: .none)

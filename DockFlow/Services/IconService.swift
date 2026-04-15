@@ -1,33 +1,32 @@
 import Foundation
 import AppKit
 
+/// Thin passthrough to `NSWorkspace`. Does NOT cache — every call returns
+/// whatever macOS currently renders for that file, so changes on disk
+/// (app updates, replaced icons, moved files) show up immediately.
 public final class IconService: IconProviding, @unchecked Sendable {
     private let workspace: NSWorkspace
-    private let lock = NSLock()
-    private var cache: [String: NSImage] = [:]
-    private var accessOrder: [String] = []
-    private let maxEntries: Int
+    private let iconSize: NSSize
 
-    public init(workspace: NSWorkspace = .shared, maxEntries: Int = 512) {
+    public init(workspace: NSWorkspace = .shared, iconSize: NSSize = NSSize(width: 64, height: 64)) {
         self.workspace = workspace
-        self.maxEntries = maxEntries
+        self.iconSize = iconSize
     }
 
     public func icon(for item: DockItem) -> NSImage {
-        let key = item.iconCacheKey
-        if let cached = fetch(key) { return cached }
-
-        let image = resolve(item: item)
-        store(key: key, image: image)
-        return image
+        switch item.target {
+        case .fileURL(let url):
+            return icon(forFilePath: url.path(percentEncoded: false))
+        case .webURL:
+            return symbolFallback(item.kind.symbolName)
+        case .none:
+            return symbolFallback(item.kind.symbolName)
+        }
     }
 
     public func icon(forFilePath path: String) -> NSImage {
-        let key = "file:" + path
-        if let cached = fetch(key) { return cached }
         let image = workspace.icon(forFile: path)
-        image.size = NSSize(width: 64, height: 64)
-        store(key: key, image: image)
+        image.size = iconSize
         return image
     }
 
@@ -37,58 +36,15 @@ public final class IconService: IconProviding, @unchecked Sendable {
     }
 
     public func clearCache() {
-        lock.lock(); defer { lock.unlock() }
-        cache.removeAll()
-        accessOrder.removeAll()
+        // No-op. This service does not cache. Kept to satisfy the protocol
+        // and for any UI affordance that wants to "refresh icons".
     }
 
-    // MARK: - Private
-
-    private func resolve(item: DockItem) -> NSImage {
-        switch item.target {
-        case .fileURL(let url):
-            let icon = workspace.icon(forFile: url.path(percentEncoded: false))
-            icon.size = NSSize(width: 64, height: 64)
-            return icon
-        case .webURL:
-            return systemFallbackIcon(symbolName: "link")
-        case .none:
-            return systemFallbackIcon(symbolName: item.kind.symbolName)
-        }
-    }
-
-    private func systemFallbackIcon(symbolName: String) -> NSImage {
+    private func symbolFallback(_ symbolName: String) -> NSImage {
         if let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil) {
             let config = NSImage.SymbolConfiguration(pointSize: 32, weight: .regular)
             return image.withSymbolConfiguration(config) ?? image
         }
-        return NSImage(size: NSSize(width: 32, height: 32))
-    }
-
-    private func fetch(_ key: String) -> NSImage? {
-        lock.lock(); defer { lock.unlock() }
-        guard let image = cache[key] else { return nil }
-        touch(key)
-        return image
-    }
-
-    private func store(key: String, image: NSImage) {
-        lock.lock(); defer { lock.unlock() }
-        cache[key] = image
-        touch(key)
-        if accessOrder.count > maxEntries {
-            let overflow = accessOrder.count - maxEntries
-            for removedKey in accessOrder.prefix(overflow) {
-                cache.removeValue(forKey: removedKey)
-            }
-            accessOrder.removeFirst(overflow)
-        }
-    }
-
-    private func touch(_ key: String) {
-        if let idx = accessOrder.firstIndex(of: key) {
-            accessOrder.remove(at: idx)
-        }
-        accessOrder.append(key)
+        return NSImage(size: iconSize)
     }
 }
